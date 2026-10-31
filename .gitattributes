@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+# VBA source is imported on Windows; keep CRLF.
+*.bas text eol=crlf
+
+# Copy-paste VBA source and docs.
+*.txt text eol=crlf
+*.md text eol=lf
+*.ps1 text eol=lf
+*.yml text eol=lf
+*.svg text eol=lf
