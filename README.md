@@ -1,0 +1,1 @@
+# word-japanese-caret-align
