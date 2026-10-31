@@ -1,0 +1,228 @@
+' ============================================================
+' Word 日语精听排版 · 光标垂直对齐（中文提示版）
+'
+' 用法：在 Word 中按 Alt+F11，插入一个新模块；
+' 如果模块顶部已经有 Option Explicit，保留即可。
+' 把本文件全部复制粘贴到模块中，然后编译。
+'
+' 快捷键：Alt + 下方向键
+'
+' 第一次按：在日文行下面生成一条全角空格“网格行”，
+' 光标落到当前词的列。
+' 再按：回到同一网格行的对应列。
+' 补写前面的词时，宏会自动切到“改写”模式，
+' 避免挤动后面的注释；写完后按 Insert 可切回插入模式。
+'
+' 注意：
+' 1) 旧版生成的缩进注释行不兼容，需要删除后重新生成。
+' 2) 注释行会包含全角空格，这是用于定位的排版空白。
+' 3) 只适用于普通单栏正文；表格、文本框、分栏不适用。
+' ============================================================
+
+Sub CaretDownAlignedFinal()
+    Dim sel As Object
+    Dim doc As Object
+    Dim curP As Object
+    Dim nextP As Object
+    Dim x As Single
+    Dim srcSize As Single
+    Dim srcName As String
+    Dim curIdx As Long
+    Dim i As Long
+
+    Set sel = Selection
+    Set doc = ActiveDocument
+
+    ' 每次开始先切回插入模式，避免在日文行误改写
+    doc.Application.Options.Overtype = False
+
+    If sel.Type <> 1 Then Beep: Exit Sub
+    If sel.StoryType <> 1 Then Beep: Exit Sub
+    If sel.Information(12) <> 0 Then Beep: Exit Sub
+
+    ' 当前光标相对正文左边界的水平位置（磅）
+    x = sel.Information(7)
+    If x < 0 Then Beep: Exit Sub
+
+    ' 源文字的字体和字号；网格空格用同样字号才能对齐
+    srcSize = sel.Font.Size
+    If srcSize <= 0 Or srcSize > 200 Then srcSize = 10.5
+    srcName = sel.Font.Name
+    If srcName = "" Then srcName = "MS Mincho"
+
+    Set curP = sel.Paragraphs(1)
+
+    ' 关键：Word 的 Paragraph 对象没有 Index 属性。
+    ' 用 Paragraphs 集合和 Range.Start 找到当前段的位置。
+    curIdx = 0
+    For i = 1 To doc.Paragraphs.Count
+        If doc.Paragraphs(i).Range.Start = curP.Range.Start Then
+            curIdx = i
+            Exit For
+        End If
+    Next i
+
+    If curIdx = 0 Then
+        Beep
+        Exit Sub
+    End If
+
+    Set nextP = Nothing
+    If curIdx < doc.Paragraphs.Count Then
+        Set nextP = doc.Paragraphs(curIdx + 1)
+    End If
+
+    If nextP Is Nothing Then
+        ' 没有下一段：新建
+        curP.Range.InsertParagraphAfter
+        Set nextP = doc.Paragraphs(curIdx + 1)
+    ElseIf Not IsBlankPara(nextP) And Not IsGridText(nextP) Then
+        ' 下一段是普通正文：不要改它，在两者之间插一条专用注释行
+        If nextP.Range.ParagraphFormat.FirstLineIndent > srcSize * 1.5 Then
+            MsgBox "检测到旧版生成的缩进注释行。请先删除这一行，再回到日文行重新按 Alt+↓ 生成新的网格注释行。", vbInformation
+            Exit Sub
+        End If
+
+        curP.Range.InsertParagraphAfter
+        Set nextP = doc.Paragraphs(curIdx + 1)
+    End If
+
+    If IsBlankPara(nextP) Then
+        MakeGridLine doc, nextP, srcName, srcSize
+        MoveCaretToX doc, nextP, x, sel
+        doc.Application.Options.Overtype = False
+    ElseIf IsGridText(nextP) Then
+        MoveCaretToX doc, nextP, x, sel
+        SetOvertypeForGrid doc, nextP, sel
+    Else
+        MoveCaretToX doc, nextP, x, sel
+    End If
+
+    If doc.Application.Options.Overtype Then
+        doc.Application.StatusBar = "精听排版：改写模式（按 Insert 切回插入模式）"
+    Else
+        doc.Application.StatusBar = "精听排版：已定位到目标列"
+    End If
+End Sub
+
+' 生成全角空格网格行
+Private Sub MakeGridLine(doc As Object, p As Object, srcName As String, srcSize As Single)
+    Dim textWidth As Single
+    Dim charWidth As Single
+    Dim n As Long
+    Dim spaces As String
+
+    With p.Range.ParagraphFormat
+        .Alignment = 0
+        .LeftIndent = 0
+        .FirstLineIndent = 0
+        .RightIndent = 0
+    End With
+
+    If srcName <> "" Then p.Range.Font.Name = srcName
+    p.Range.Font.Size = srcSize
+
+    textWidth = doc.PageSetup.PageWidth - doc.PageSetup.LeftMargin - doc.PageSetup.RightMargin
+    charWidth = srcSize
+    If textWidth <= 0 Or charWidth <= 0 Then Exit Sub
+
+    n = Int(textWidth / charWidth) - 1
+    If n < 1 Then n = 1
+    If n > 200 Then n = 200
+
+    spaces = String(n, ChrW(&H3000))
+    p.Range.InsertBefore spaces
+
+    If srcName <> "" Then p.Range.Font.Name = srcName
+    p.Range.Font.Size = srcSize
+End Sub
+
+' 把光标移到段落中最接近 x 的字符边界
+Private Sub MoveCaretToX(doc As Object, p As Object, x As Single, sel As Object)
+    Dim i As Long
+    Dim maxChars As Long
+    Dim bestOffset As Long
+    Dim bestDiff As Single
+    Dim curX As Single
+    Dim diff As Single
+    Dim pStart As Long
+
+    On Error GoTo Done
+
+    p.Range.Select
+    sel.Collapse 1
+    pStart = p.Range.Start
+    bestOffset = 0
+    bestDiff = Abs(sel.Information(7) - x)
+    maxChars = Len(p.Range.Text) - 1
+    If maxChars < 1 Then GoTo Done
+
+    For i = 1 To maxChars
+        sel.MoveRight 1, 1
+        If sel.Paragraphs(1).Range.Start <> pStart Then Exit For
+        curX = sel.Information(7)
+        diff = Abs(curX - x)
+        If diff < bestDiff Then
+            bestDiff = diff
+            bestOffset = i
+        End If
+        If curX >= x Then Exit For
+    Next i
+
+Done:
+    On Error GoTo 0
+    p.Range.Select
+    sel.Collapse 1
+    If bestOffset > 0 Then sel.MoveRight 1, bestOffset
+End Sub
+
+' 网格行里，如果光标右边已经有非空格文字，切到改写模式
+Private Sub SetOvertypeForGrid(doc As Object, p As Object, sel As Object)
+    Dim tailText As String
+    Dim r As Object
+
+    On Error GoTo OffMode
+
+    If sel.Start > p.Range.End - 1 Then GoTo OffMode
+
+    Set r = doc.Range(sel.Start, p.Range.End - 1)
+    tailText = r.Text
+    tailText = Replace(tailText, ChrW(&H3000), "")
+    tailText = Replace(tailText, " ", "")
+    tailText = Replace(tailText, Chr(9), "")
+    tailText = Replace(tailText, Chr(13), "")
+    tailText = Replace(tailText, Chr(10), "")
+
+    If Len(tailText) > 0 Then
+        doc.Application.Options.Overtype = True
+    Else
+        doc.Application.Options.Overtype = False
+    End If
+    Exit Sub
+
+OffMode:
+    doc.Application.Options.Overtype = False
+End Sub
+
+Private Function IsBlankPara(p As Object) As Boolean
+    Dim t As String
+    On Error Resume Next
+    t = p.Range.Text
+    t = Replace(t, Chr(13), "")
+    t = Replace(t, Chr(10), "")
+    t = Replace(t, Chr(7), "")
+    IsBlankPara = (Len(t) = 0)
+End Function
+
+' 是否为本宏生成的“全角空格网格行”
+Private Function IsGridText(p As Object) As Boolean
+    Dim t As String
+    Dim i As Long
+    Dim n As Long
+    On Error Resume Next
+    t = p.Range.Text
+    For i = 1 To Len(t)
+        If AscW(Mid$(t, i, 1)) = &H3000 Then n = n + 1
+    Next i
+    IsGridText = (n >= 3)
+End Function

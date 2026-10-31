@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="320" viewBox="0 0 1280 320" role="img" aria-labelledby="bannerTitle bannerDesc">
+  <title id="bannerTitle">Word 日语精听 · 光标垂直对齐</title>
+  <desc id="bannerDesc">CaretDownAligned: place the Word caret under any Japanese word while taking intensive-listening notes.</desc>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B1220"/>
+      <stop offset="0.55" stop-color="#0F1B33"/>
+      <stop offset="1" stop-color="#162B57"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="320" rx="24" fill="url(#bg)"/>
+
+  <!-- Decorative grid -->
+  <g stroke="#7DD3FC" stroke-opacity="0.10" stroke-width="1">
+    <path d="M900 0V320M940 0V320M980 0V320M1020 0V320M1060 0V320M1100 0V320M1140 0V320M1180 0V320M1220 0V320"/>
+    <path d="M880 40H1280M880 80H1280M880 120H1280M880 160H1280M880 200H1280M880 240H1280M880 280H1280"/>
+  </g>
+  <g fill="#7DD3FC" fill-opacity="0.18">
+    <circle cx="920" cy="60" r="3"/>
+    <circle cx="1000" cy="140" r="3"/>
+    <circle cx="1080" cy="220" r="3"/>
+    <circle cx="1160" cy="100" r="3"/>
+    <circle cx="1220" cy="260" r="3"/>
+  </g>
+
+  <text x="72" y="112" fill="#F8FAFC" font-family="'Microsoft YaHei','Yu Gothic','Segoe UI',sans-serif" font-size="44" font-weight="700">Word 日语精听 · 光标垂直对齐</text>
+  <text x="74" y="154" fill="#94A3B8" font-family="'Segoe UI','Microsoft YaHei',sans-serif" font-size="22">CaretDownAligned — put the caret under any Japanese word</text>
+
+  <!-- Demo panel -->
+  <rect x="72" y="188" width="1136" height="96" rx="14" fill="#FFFFFF" fill-opacity="0.055" stroke="#7DD3FC" stroke-opacity="0.18"/>
+  <text x="100" y="226" fill="#E2E8F0" font-family="'MS Mincho','Yu Mincho','Yu Gothic',serif" font-size="24">先生と学生が話しています。</text>
+  <text x="100" y="264" fill="#38BDF8" font-family="'Microsoft YaHei','Yu Gothic',sans-serif" font-size="24">老师</text>
+  <text x="172" y="264" fill="#38BDF8" font-family="'Microsoft YaHei','Yu Gothic',sans-serif" font-size="24">学生</text>
+  <text x="244" y="264" fill="#A78BFA" font-family="'Microsoft YaHei','Yu Gothic',sans-serif" font-size="24">正在说话。</text>
+
+  <!-- Caret marker -->
+  <path d="M172 236V282" stroke="#38BDF8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M164 236H180L172 228Z" fill="#38BDF8"/>
+
+  <!-- Shortcut key -->
+  <rect x="1014" y="218" width="164" height="42" rx="10" fill="#0EA5E9" fill-opacity="0.12" stroke="#38BDF8" stroke-opacity="0.55"/>
+  <text x="1096" y="246" fill="#BAE6FD" font-family="'Consolas','Segoe UI',monospace" font-size="20" text-anchor="middle">Alt + ↓</text>
+</svg>
